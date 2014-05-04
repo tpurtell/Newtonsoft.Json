@@ -1125,8 +1125,6 @@ namespace Newtonsoft.Json.Serialization
                 valueProvider = new DynamicValueProvider(member);
             else
                 valueProvider = new ReflectionValueProvider(member);
-#elif !(PORTABLE40)
-      valueProvider = new ExpressionValueProvider(member);
 #else
             valueProvider = new ReflectionValueProvider(member);
 #endif
