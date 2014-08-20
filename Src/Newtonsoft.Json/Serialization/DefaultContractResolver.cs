@@ -918,24 +918,6 @@ namespace Newtonsoft.Json.Serialization
         }
 #endif
 
-#if !(NET35 || NET20 || PORTABLE40)
-        /// <summary>
-        /// Creates a <see cref="JsonDynamicContract"/> for the given type.
-        /// </summary>
-        /// <param name="objectType">Type of the object.</param>
-        /// <returns>A <see cref="JsonDynamicContract"/> for the given type.</returns>
-        protected virtual JsonDynamicContract CreateDynamicContract(Type objectType)
-        {
-            JsonDynamicContract contract = new JsonDynamicContract(objectType);
-            InitializeContract(contract);
-
-            contract.PropertyNameResolver = ResolvePropertyName;
-            contract.Properties.AddRange(CreateProperties(objectType, MemberSerialization.OptOut));
-
-            return contract;
-        }
-#endif
-
         /// <summary>
         /// Creates a <see cref="JsonStringContract"/> for the given type.
         /// </summary>
@@ -985,11 +967,6 @@ namespace Newtonsoft.Json.Serialization
 #if !(NETFX_CORE || PORTABLE40 || PORTABLE)
             if (!IgnoreSerializableInterface && typeof(ISerializable).IsAssignableFrom(t))
                 return CreateISerializableContract(objectType);
-#endif
-
-#if !(NET35 || NET20 || PORTABLE40)
-            if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(t))
-                return CreateDynamicContract(objectType);
 #endif
 
 #if !(PORTABLE || NETFX_CORE)

@@ -491,11 +491,6 @@ namespace Newtonsoft.Json.Serialization
 
                     return targetDictionary;
                 }
-#if !(NET35 || NET20 || PORTABLE40)
-                case JsonContractType.Dynamic:
-                    JsonDynamicContract dynamicContract = (JsonDynamicContract)contract;
-                    return CreateDynamic(reader, dynamicContract, member, id);
-#endif
 #if !(NETFX_CORE || PORTABLE40 || PORTABLE)
                 case JsonContractType.Serializable:
                     JsonISerializableContract serializableContract = (JsonISerializableContract)contract;
@@ -1488,93 +1483,6 @@ To fix this error either change the environment to be fully trusted, change the 
         }
 #endif
 
-#if !(NET35 || NET20 || PORTABLE40)
-        private object CreateDynamic(JsonReader reader, JsonDynamicContract contract, JsonProperty member, string id)
-        {
-            IDynamicMetaObjectProvider newObject;
-
-            if (!contract.IsInstantiable)
-                throw JsonSerializationException.Create(reader, "Could not create an instance of type {0}. Type is an interface or abstract class and cannot be instantiated.".FormatWith(CultureInfo.InvariantCulture, contract.UnderlyingType));
-
-            if (contract.DefaultCreator != null &&
-                (!contract.DefaultCreatorNonPublic || Serializer._constructorHandling == ConstructorHandling.AllowNonPublicDefaultConstructor))
-                newObject = (IDynamicMetaObjectProvider)contract.DefaultCreator();
-            else
-                throw JsonSerializationException.Create(reader, "Unable to find a default constructor to use for type {0}.".FormatWith(CultureInfo.InvariantCulture, contract.UnderlyingType));
-
-            if (id != null)
-                AddReference(reader, id, newObject);
-
-            OnDeserializing(reader, contract, newObject);
-
-            int initialDepth = reader.Depth;
-
-            bool finished = false;
-            do
-            {
-                switch (reader.TokenType)
-                {
-                    case JsonToken.PropertyName:
-                        string memberName = reader.Value.ToString();
-
-                        try
-                        {
-                            if (!reader.Read())
-                                throw JsonSerializationException.Create(reader, "Unexpected end when setting {0}'s value.".FormatWith(CultureInfo.InvariantCulture, memberName));
-
-                            // first attempt to find a settable property, otherwise fall back to a dynamic set without type
-                            JsonProperty property = contract.Properties.GetClosestMatchProperty(memberName);
-
-                            if (property != null && property.Writable && !property.Ignored)
-                            {
-                                if (property.PropertyContract == null)
-                                    property.PropertyContract = GetContractSafe(property.PropertyType);
-
-                                JsonConverter propertyConverter = GetConverter(property.PropertyContract, property.MemberConverter, null, null);
-
-                                if (!SetPropertyValue(property, propertyConverter, null, member, reader, newObject))
-                                    reader.Skip();
-                            }
-                            else
-                            {
-                                Type t = (JsonReader.IsPrimitiveToken(reader.TokenType)) ? reader.ValueType : typeof(IDynamicMetaObjectProvider);
-
-                                JsonContract dynamicMemberContract = GetContractSafe(t);
-                                JsonConverter dynamicMemberConverter = GetConverter(dynamicMemberContract, null, null, member);
-
-                                object value;
-                                if (dynamicMemberConverter != null && dynamicMemberConverter.CanRead)
-                                    value = DeserializeConvertable(dynamicMemberConverter, reader, t, null);
-                                else
-                                    value = CreateValueInternal(reader, t, dynamicMemberContract, null, null, member, null);
-
-                                contract.TrySetMember(newObject, memberName, value);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            if (IsErrorHandled(newObject, contract, memberName, reader as IJsonLineInfo, reader.Path, ex))
-                                HandleError(reader, true, initialDepth);
-                            else
-                                throw;
-                        }
-                        break;
-                    case JsonToken.EndObject:
-                        finished = true;
-                        break;
-                    default:
-                        throw JsonSerializationException.Create(reader, "Unexpected token when deserializing object: " + reader.TokenType);
-                }
-            } while (!finished && reader.Read());
-
-            if (!finished)
-                ThrowUnexpectedEndException(reader, contract, newObject, "Unexpected end when deserializing object.");
-
-            OnDeserialized(reader, contract, newObject);
-
-            return newObject;
-        }
-#endif
 
         private object CreateObjectFromNonDefaultConstructor(JsonReader reader, JsonObjectContract contract, JsonProperty containerProperty, ConstructorInfo constructorInfo, string id)
         {

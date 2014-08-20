@@ -176,11 +176,6 @@ namespace Newtonsoft.Json.Serialization
                     JsonDictionaryContract dictionaryContract = (JsonDictionaryContract)valueContract;
                     SerializeDictionary(writer, (value is IDictionary) ? (IDictionary)value : dictionaryContract.CreateWrapper(value), dictionaryContract, member, containerContract, containerProperty);
                     break;
-#if !(NET35 || NET20 || PORTABLE40)
-                case JsonContractType.Dynamic:
-                    SerializeDynamic(writer, (IDynamicMetaObjectProvider)value, (JsonDynamicContract)valueContract, member, containerContract, containerProperty);
-                    break;
-#endif
 #if !(NETFX_CORE || PORTABLE40 || PORTABLE)
                 case JsonContractType.Serializable:
                     SerializeISerializable(writer, (ISerializable)value, (JsonISerializableContract)valueContract, member, containerContract, containerProperty);
@@ -752,83 +747,6 @@ To fix this error either change the environment to be fully trusted, change the 
                 {
                     writer.WritePropertyName(serializationEntry.Name);
                     SerializeValue(writer, serializationEntry.Value, valueContract, null, contract, member);
-                }
-            }
-
-            writer.WriteEndObject();
-
-            _serializeStack.RemoveAt(_serializeStack.Count - 1);
-            OnSerialized(writer, contract, value);
-        }
-#endif
-
-#if !(NET35 || NET20 || PORTABLE40)
-        private void SerializeDynamic(JsonWriter writer, IDynamicMetaObjectProvider value, JsonDynamicContract contract, JsonProperty member, JsonContainerContract collectionContract, JsonProperty containerProperty)
-        {
-            OnSerializing(writer, contract, value);
-            _serializeStack.Add(value);
-
-            WriteObjectStart(writer, value, contract, member, collectionContract, containerProperty);
-
-            int initialDepth = writer.Top;
-
-            for (int index = 0; index < contract.Properties.Count; index++)
-            {
-                JsonProperty property = contract.Properties[index];
-
-                // only write non-dynamic properties that have an explicit attribute
-                if (property.HasMemberAttribute)
-                {
-                    try
-                    {
-                        object memberValue;
-                        JsonContract memberContract;
-
-                        if (!CalculatePropertyValues(writer, value, contract, member, property, out memberContract, out memberValue))
-                            continue;
-
-                        property.WritePropertyName(writer);
-                        SerializeValue(writer, memberValue, memberContract, property, contract, member);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsErrorHandled(value, contract, property.PropertyName, null, writer.ContainerPath, ex))
-                            HandleError(writer, initialDepth);
-                        else
-                            throw;
-                    }
-                }
-            }
-
-            foreach (string memberName in value.GetDynamicMemberNames())
-            {
-                object memberValue;
-                if (contract.TryGetMember(value, memberName, out memberValue))
-                {
-                    try
-                    {
-                        JsonContract valueContract = GetContractSafe(memberValue);
-
-                        if (!ShouldWriteDynamicProperty(memberValue))
-                            continue;
-
-                        if (CheckForCircularReference(writer, memberValue, null, valueContract, contract, member))
-                        {
-                            string resolvedPropertyName = (contract.PropertyNameResolver != null)
-                                ? contract.PropertyNameResolver(memberName)
-                                : memberName;
-
-                            writer.WritePropertyName(resolvedPropertyName);
-                            SerializeValue(writer, memberValue, valueContract, null, contract, member);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsErrorHandled(value, contract, memberName, null, writer.ContainerPath, ex))
-                            HandleError(writer, initialDepth);
-                        else
-                            throw;
-                    }
                 }
             }
 
