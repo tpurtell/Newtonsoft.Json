@@ -118,7 +118,6 @@ namespace Newtonsoft.Json.Serialization
             new DiscriminatedUnionConverter(),
 #endif
             new KeyValuePairConverter(),
-            new BsonObjectIdConverter(),
             new RegexConverter()
         };
 

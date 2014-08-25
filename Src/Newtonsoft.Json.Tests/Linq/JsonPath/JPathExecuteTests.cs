@@ -29,7 +29,6 @@ using System.Collections.Generic;
 using System.Numerics;
 #endif
 using Newtonsoft.Json.Linq.JsonPath;
-using Newtonsoft.Json.Tests.Bson;
 #if !NETFX_CORE
 using NUnit.Framework;
 #else

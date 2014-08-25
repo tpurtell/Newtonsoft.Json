@@ -55,7 +55,6 @@ using System.Collections;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Collections.ObjectModel;
-using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Converters;
 #if !NET20
@@ -2838,7 +2837,7 @@ Path '', line 1, position 1.",
                 () => { JsonConvert.DeserializeObject<double>(json); });
         }
 
-#if !(NET35 || NET20 || PORTABLE40)
+#if !(NET35 || NET20 || PORTABLE40|| PORTABLE)
         [Test]
         public void CannotDeserializeArrayIntoDynamic()
         {
@@ -6419,26 +6418,6 @@ Parameter name: value",
             public DateTimeOffset Foo { get; set; }
         }
 
-        [Test]
-        public void TokenFromBson()
-        {
-            MemoryStream ms = new MemoryStream();
-            BsonWriter writer = new BsonWriter(ms);
-            writer.WriteStartArray();
-            writer.WriteValue("2000-01-02T03:04:05+06:00");
-            writer.WriteEndArray();
-
-            byte[] data = ms.ToArray();
-            BsonReader reader = new BsonReader(new MemoryStream(data))
-            {
-                ReadRootValueAsArray = true
-            };
-
-            JArray a = (JArray)JArray.ReadFrom(reader);
-            JValue v = (JValue)a[0];
-            Console.WriteLine(v.Value.GetType());
-            Console.WriteLine(a.ToString());
-        }
 
         [Test]
         public void ObjectRequiredDeserializeMissing()

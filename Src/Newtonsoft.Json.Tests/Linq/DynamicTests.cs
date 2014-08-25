@@ -23,7 +23,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-#if !(NET35 || NET20 || PORTABLE40)
+#if !(NET35 || NET20 || PORTABLE40|| PORTABLE)
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -295,7 +295,7 @@ namespace Newtonsoft.Json.Tests.Linq
             dynamic d = o;
             dynamic r;
 
-            #region Add
+#region Add
             r = d.String + " LAMO!";
             Assert.AreEqual("A string lol! LAMO!", (string)r);
             r += " gg";
@@ -384,7 +384,7 @@ namespace Newtonsoft.Json.Tests.Linq
 #endif
             #endregion
 
-            #region Subtract
+#region Subtract
             r = d.Integer - 1;
             Assert.AreEqual(0, (int)r);
             r -= 2;
@@ -458,7 +458,7 @@ namespace Newtonsoft.Json.Tests.Linq
 #endif
             #endregion
 
-            #region Multiply
+#region Multiply
             r = d.Integer * 1;
             Assert.AreEqual(1, (int)r);
             r *= 2;
@@ -532,7 +532,7 @@ namespace Newtonsoft.Json.Tests.Linq
 #endif
             #endregion
 
-            #region Divide
+#region Divide
             r = d.Integer / 1;
             Assert.AreEqual(1, (int)r);
             r /= 2;

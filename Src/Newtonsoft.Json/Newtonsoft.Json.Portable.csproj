@@ -9,7 +9,7 @@
     <RootNamespace>Newtonsoft.Json</RootNamespace>
     <AssemblyName>Newtonsoft.Json</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Profile78</TargetFrameworkProfile>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
@@ -43,27 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bson\BsonBinaryType.cs" />
-    <Compile Include="Bson\BsonBinaryWriter.cs" />
-    <Compile Include="Bson\BsonObjectId.cs" />
-    <Compile Include="Bson\BsonReader.cs" />
-    <Compile Include="Bson\BsonToken.cs" />
-    <Compile Include="Bson\BsonType.cs" />
-    <Compile Include="Bson\BsonWriter.cs" />
-    <Compile Include="Concurrent\ConcurrentDictionary.cs" />
-    <Compile Include="Concurrent\ConcurrentOrderedList.cs" />
-    <Compile Include="Concurrent\ConcurrentQueue.cs" />
-    <Compile Include="Concurrent\ConcurrentStack.cs" />
-    <Compile Include="Concurrent\EnumerablePartitioner.cs" />
-    <Compile Include="Concurrent\IProducerConsumerCollection.cs" />
-    <Compile Include="Concurrent\ListPartitioner.cs" />
-    <Compile Include="Concurrent\OrderablePartitioner.cs" />
-    <Compile Include="Concurrent\Partitioner.cs" />
-    <Compile Include="Concurrent\SplitOrderedList.cs" />
-    <Compile Include="Concurrent\UserRangePartitioner.cs" />
     <Compile Include="ConstructorHandling.cs" />
     <Compile Include="Converters\BinaryConverter.cs" />
-    <Compile Include="Converters\BsonObjectIdConverter.cs" />
     <Compile Include="Converters\CustomCreationConverter.cs" />
     <Compile Include="Converters\DataSetConverter.cs" />
     <Compile Include="Converters\DataTableConverter.cs" />
