@@ -184,6 +184,13 @@
     <Compile Include="Serialization\ReflectionValueProvider.cs" />
     <Compile Include="Serialization\TraceJsonReader.cs" />
     <Compile Include="Serialization\TraceJsonWriter.cs" />
+    <Compile Include="Smile\SmileBinaryType.cs" />
+    <Compile Include="Smile\SmileBinaryWriter.cs" />
+    <Compile Include="Smile\SmileConstant.cs" />
+    <Compile Include="Smile\SmileReader.cs" />
+    <Compile Include="Smile\SmileType.cs" />
+    <Compile Include="Smile\SmileUtil.cs" />
+    <Compile Include="Smile\SmileWriter.cs" />
     <Compile Include="StringEscapeHandling.cs" />
     <Compile Include="TraceLevel.cs" />
     <Compile Include="TypeNameHandling.cs" />

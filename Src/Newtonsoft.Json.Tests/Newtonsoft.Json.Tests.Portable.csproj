@@ -153,6 +153,9 @@
     <Compile Include="Serialization\WebApiIntegrationTests.cs" />
     <Compile Include="Serialization\JsonPropertyCollectionTests.cs" />
     <Compile Include="Serialization\NullValueHandlingTests.cs" />
+    <Compile Include="Smile\SmileReaderTests.cs" />
+    <Compile Include="Smile\SmileWriterTests.cs" />
+    <Compile Include="Smile\TestClasses.cs" />
     <Compile Include="TestObjects\Aa.cs" />
     <Compile Include="TestObjects\AnswerFilterModel.cs" />
     <Compile Include="TestObjects\Antworten.cs" />
