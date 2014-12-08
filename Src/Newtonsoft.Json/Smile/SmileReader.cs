@@ -412,7 +412,29 @@ namespace Newtonsoft.Json.Smile
 
 		private long ReadZigzag64()
 		{
-			throw new NotImplementedException();
+			long result = 0;
+
+			int i = this._reader.ReadSByte(); // first 7 bits
+			i = (i << 7) + this._reader.ReadSByte(); // 14 bits
+			i = (i << 7) + this._reader.ReadSByte(); // 21
+			i = (i << 7) + this._reader.ReadSByte();
+
+			int ptr = 4;
+			int maxEnd = 11;
+
+			// Ok: couple of bytes more
+			long l = i;
+			do {
+				int value = this._reader.ReadSByte();
+				ptr++;
+				if (value < 0)
+				{
+					l = (l << 6) + (value & 0x3F);
+					return SmileUtil.zigzagDecode(l);
+				}
+				l = (l << 7) + value;
+			} while (ptr < maxEnd);
+			throw new FormatException("bad zigzag64");
 		}
 
 		private long ReadBigInteger()

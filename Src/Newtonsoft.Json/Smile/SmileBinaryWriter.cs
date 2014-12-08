@@ -150,9 +150,9 @@ namespace Newtonsoft.Json.Smile
 			this._writer.Write(buf);
 		}
 
-
 		private const int TOKEN_PREFIX_SMALL_INT = 0xC0;
 		private const int TOKEN_BYTE_INT_32 = 36;
+		private const int TOKEN_BYTE_INT_64 = 37;
 		public void WriteInteger(int value)
 		{
 			int i = value;
@@ -212,7 +212,72 @@ namespace Newtonsoft.Json.Smile
 
 		public void WriteLong(long value)
 		{
+			if (value >= int.MinValue && value <= int.MaxValue)
+			{
+				this.WriteInteger((int)value);
+				return;
+			}
+
+			value = SmileUtil.zigzagEncode(value);
+			// Ok, well, we do know that 5 lowest-significant bytes are needed
+			int i = (int)value;
+			// 4 can be extracted from lower int
+			byte b0 = (byte) (0x80 + (i & 0x3F)); // sign bit set in the last byte
+			byte b1 = (byte) ((i >> 6) & 0x7F);
+			byte b2 = (byte) ((i >> 13) & 0x7F);
+			byte b3 = (byte) ((i >> 20) & 0x7F);
+			// fifth one is split between ints:
+			value = (long)((ulong)value >> 27);
+			byte b4 = (byte) (((int) value) & 0x7F);
+
+			i = (int)(value >> 7);
+			if (i == 0)
+			{
+				this._Write((byte)TOKEN_BYTE_INT_64, b4, b3, b2, b1, b0);
+				return;
+			}
+			if (i <= 0x7F)
+			{
+				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i);
+				this._Write(b4, b3, b2, b1, b0);
+				return;
+			}
+			byte b5 = (byte)(i & 0x7F);
+			i >>= 7;
+			if (i <= 0x7F)
+			{
+				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i);
+				this._Write(b5, b4, b3, b2, b1, b0);
+				return;
+			}
+			byte b6 = (byte)(i & 0x7F);
+			i >>= 7;
+			if (i <= 0x7F)
+			{
+				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i, b6);
+				this._Write(b5, b4, b3, b2, b1, b0);
+				return;
+			}
+			byte b7 = (byte)(i & 0x7F);
+			i >>= 7;
+			if (i <= 0x7F)
+			{
+				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i, b7, b6);
+				this._Write(b5, b4, b3, b2, b1, b0);
+				return;
+			}
+			byte b8 = (byte)(i & 0x7F);
+			i >>= 7;
+			// must be done, with 10 bytes! (9 * 7 + 6 == 69 bits; only need 63)
+			this._Write((byte)TOKEN_BYTE_INT_64, (byte)i, b8, b7, b6);
+			this._Write(b5, b4, b3, b2, b1, b0);
+
 			throw new NotImplementedException();
+		}
+
+		public void _Write(params byte[] value)
+		{
+			this._writer.Write(value);
 		}
 
 		public void WriteFloat(float value)

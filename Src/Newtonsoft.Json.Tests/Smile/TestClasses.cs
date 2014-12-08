@@ -19,6 +19,8 @@ namespace Newtonsoft.Json.Tests.Smile
 		[DataMember]
 		public int salary;
 		[DataMember]
+		public long deposit;
+		[DataMember]
 		public byte[] userImage;
 
 		public class Name

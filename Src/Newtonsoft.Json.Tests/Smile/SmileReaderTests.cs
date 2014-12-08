@@ -59,16 +59,45 @@ namespace Newtonsoft.Json.Tests.Smile
     public class SmileReaderTests : TestFixtureBase
     {
         [Test]
-        public void ReadSingleObject()
+        public void ReadSingleObject_LongToInt()
         {
 			JsonSerializer serializer = new JsonSerializer();
 
-            byte[] data = HexToBytes("3A-29-0A-01-FA-83-6E-61-6D-65-FA-84-66-69-72-73-74-43-4D-61-72-79-83-6C-61-73-74-43-4A-61-6E-65-FB-85-67-65-6E-64-65-72-45-46-45-4D-41-4C-45-87-76-65-72-69-66-69-65-64-23-85-73-61-6C-61-72-79-24-10-49-A4-88-75-73-65-72-49-6D-61-67-65-E8-8B-24-11-29-44-62-3D-2E-4F-29-13-08-42-01-FB");
+			byte[] data = HexToBytes("3A-29-0A-01-FA-83-6E-61-6D-65-FA-84-66-69-72-73-74-42-4A-6F-65-83-6C-61-73-74-46-53-69-78-70-61-63-6B-FB-85-67-65-6E-64-65-72-43-4D-41-4C-45-87-76-65-72-69-66-69-65-64-22-85-73-61-6C-61-72-79-24-03-01-B2-86-64-65-70-6F-73-69-74-24-03-01-B2-88-75-73-65-72-49-6D-61-67-65-E8-87-23-1B-6D-76-13-05-64-21-FB");
+
             MemoryStream ms = new MemoryStream(data);
 
 			SmileReader reader = new SmileReader(ms, false, DateTimeKind.Local);
 			People people = serializer.Deserialize<People>(reader);
 
+			Assert.NotNull(people);
+			Assert.NotNull(people.name);
+			Assert.AreEqual("Joe", people.name.first);
+			Assert.AreEqual("Sixpack", people.name.last);
+
+			Assert.AreEqual("MALE", people.gender);
+			Assert.AreEqual(false, people.verified);
+
+			Assert.AreEqual(12345, people.salary);
+			Assert.AreEqual(12345L, people.deposit);
+
+			Assert.NotNull(people.userImage);
+			Assert.AreEqual(7, people.userImage.Length);
+		}
+
+        [Test]
+        public void ReadSingleObject()
+        {
+			JsonSerializer serializer = new JsonSerializer();
+
+			byte[] data = HexToBytes("3A-29-0A-01-FA-83-6E-61-6D-65-FA-84-66-69-72-73-74-43-4D-61-72-79-83-6C-61-73-74-43-4A-61-6E-65-FB-85-67-65-6E-64-65-72-45-46-45-4D-41-4C-45-87-76-65-72-69-66-69-65-64-23-85-73-61-6C-61-72-79-24-10-49-A4-86-64-65-70-6F-73-69-74-25-01-13-16-01-37-94-88-75-73-65-72-49-6D-61-67-65-E8-8B-24-11-29-44-62-3D-2E-4F-29-13-08-42-01-FB");
+
+            MemoryStream ms = new MemoryStream(data);
+
+			SmileReader reader = new SmileReader(ms, false, DateTimeKind.Local);
+			People people = serializer.Deserialize<People>(reader);
+
+			Assert.NotNull(people);
 			Assert.NotNull(people.name);
 			Assert.AreEqual("Mary", people.name.first);
 			Assert.AreEqual("Jane", people.name.last);
@@ -77,6 +106,7 @@ namespace Newtonsoft.Json.Tests.Smile
 			Assert.AreEqual(true, people.verified);
 
 			Assert.AreEqual(67890, people.salary);
+			Assert.AreEqual(9876543210L, people.deposit);
 
 			Assert.NotNull(people.userImage);
 			Assert.AreEqual(11, people.userImage.Length);
@@ -106,7 +136,8 @@ namespace Newtonsoft.Json.Tests.Smile
 		{
 			JsonSerializer serializer = new JsonSerializer();
 
-			byte[] data = HexToBytes("3A-29-0A-01-F8-FA-83-6E-61-6D-65-FA-84-66-69-72-73-74-42-4A-6F-65-83-6C-61-73-74-46-53-69-78-70-61-63-6B-FB-85-67-65-6E-64-65-72-43-4D-41-4C-45-87-76-65-72-69-66-69-65-64-22-85-73-61-6C-61-72-79-24-03-01-B2-88-75-73-65-72-49-6D-61-67-65-E8-87-23-1B-6D-76-13-05-64-21-FB-FA-40-FA-41-43-4D-61-72-79-42-43-4A-61-6E-65-FB-43-45-46-45-4D-41-4C-45-44-23-45-24-10-49-A4-46-E8-8B-24-11-29-44-62-3D-2E-4F-29-13-08-42-01-FB-F9");
+			byte[] data = HexToBytes("3A-29-0A-01-F8-FA-83-6E-61-6D-65-FA-84-66-69-72-73-74-42-4A-6F-65-83-6C-61-73-74-46-53-69-78-70-61-63-6B-FB-85-67-65-6E-64-65-72-43-4D-41-4C-45-87-76-65-72-69-66-69-65-64-22-85-73-61-6C-61-72-79-24-03-01-B2-86-64-65-70-6F-73-69-74-24-03-01-B2-88-75-73-65-72-49-6D-61-67-65-E8-87-23-1B-6D-76-13-05-64-21-FB-FA-40-FA-41-43-4D-61-72-79-42-43-4A-61-6E-65-FB-43-45-46-45-4D-41-4C-45-44-23-45-24-10-49-A4-46-25-01-13-16-01-37-94-47-E8-8B-24-11-29-44-62-3D-2E-4F-29-13-08-42-01-FB-F9");
+
 			MemoryStream ms = new MemoryStream(data);
 
 			SmileReader reader = new SmileReader(ms, true, DateTimeKind.Local);
@@ -123,6 +154,7 @@ namespace Newtonsoft.Json.Tests.Smile
 			Assert.AreEqual(false, people.verified);
 
 			Assert.AreEqual(12345, people.salary);
+			Assert.AreEqual(12345L, people.deposit);
 
 			Assert.NotNull(people.userImage);
 			Assert.AreEqual(7, people.userImage.Length);
@@ -138,6 +170,7 @@ namespace Newtonsoft.Json.Tests.Smile
 			Assert.AreEqual(true, people.verified);
 
 			Assert.AreEqual(67890, people.salary);
+			Assert.AreEqual(9876543210L, people.deposit);
 
 			Assert.NotNull(people.userImage);
 			Assert.AreEqual(11, people.userImage.Length);
