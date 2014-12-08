@@ -16,7 +16,7 @@ namespace Newtonsoft.Json.Smile
 		public static bool IsASCIIString(byte[] buf, out string s)
 		{
 			s = Encoding.UTF8.GetString(buf, 0, buf.Length);
-			return buf.Any(b => b >= 128);
+			return !buf.Any(b => b >= 128);
 		}
 
 		public static byte[] GetASCIIBytes(string s)
