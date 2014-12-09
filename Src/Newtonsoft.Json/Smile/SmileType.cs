@@ -25,33 +25,7 @@
 
 namespace Newtonsoft.Json.Smile
 {
-	//internal enum SmileType : byte
-	//{
-	//	Number = 1,
-	//	//String = 2,
-	//	Binary = 5,
-	//	Undefined = 6,
-	//	Oid = 7,
-	//	Boolean = 8,
-	//	Date = 9,
-	//	Null = 10,
-	//	Regex = 11,
-	//	Reference = 12,
-	//	Code = 13,
-	//	Symbol = 14,
-	//	CodeWScope = 15,
-	//	Integer = 16,
-	//	TimeStamp = 17,
-	//	Long = 18,
-	//	//MinKey = -1,
-	//	MaxKey = 127,
-
-	//	Array = 0xF8,
-	//	Object = 0xFA,
-	//	String = 0x42,
-	//}
-
-
+	//merge to VALUE_CONSTANTS?
 	public enum SmileTypeClass : byte
 	{
 		ShortSharedValueStringReference = 0x00,

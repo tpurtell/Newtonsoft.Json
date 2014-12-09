@@ -302,7 +302,6 @@ namespace Newtonsoft.Json.Smile
                     SetToken(token);
                     ContainerContext newContext = new ContainerContext(type);
                     PushContext(newContext);
-                    //newContext.Length = ReadInt32();
                     return true;
                 }
                 case State.Complete:
@@ -412,8 +411,6 @@ namespace Newtonsoft.Json.Smile
 
 		private long ReadZigzag64()
 		{
-			long result = 0;
-
 			int i = this._reader.ReadSByte(); // first 7 bits
 			i = (i << 7) + this._reader.ReadSByte(); // 14 bits
 			i = (i << 7) + this._reader.ReadSByte(); // 21
@@ -442,17 +439,40 @@ namespace Newtonsoft.Json.Smile
 			throw new NotImplementedException();
 		}
 
-		private int ReadFloat32()
+		private int _Read4BytesToInteger()
 		{
-			throw new NotImplementedException();
+			byte[] buf = this._reader.ReadBytes(4);
+			int value = buf[0];
+			for (int i = 1; i < 4; i++)
+				value = (value << 7) + (sbyte)buf[i];
+			return value;
 		}
 
-		private long ReadFloat64()
+		private static float Int32BitsToFloat(int value)
 		{
-			throw new NotImplementedException();
+			byte[] bytes = BitConverter.GetBytes(value);
+			return BitConverter.ToSingle(bytes, 0);
 		}
 
-		private long ReadBigDecimal()
+		private float ReadFloat32()
+		{
+			// just need 5 bytes to get int32 first; all are unsigned
+			int i = _Read4BytesToInteger();
+			i = (i << 7) + this._reader.ReadSByte();
+			return Int32BitsToFloat(i);
+		}
+
+		private double ReadFloat64()
+		{
+			// ok; let's take two sets of 4 bytes (each is int)
+			long hi = _Read4BytesToInteger();
+			long value = (hi << 28) + (long)_Read4BytesToInteger();
+			value = (value << 7) + this._reader.ReadSByte();
+			value = (value << 7) + this._reader.ReadSByte();
+			return BitConverter.Int64BitsToDouble(value);
+		}
+
+		private Decimal ReadBigDecimal()
 		{
 			throw new NotImplementedException();
 		}
@@ -556,8 +576,24 @@ namespace Newtonsoft.Json.Smile
 						SetToken(JsonToken.Bytes, data);
 						break;
 					}
+				case SmileTypeClass.LongASCIIText:
+					{
+						byte[] data = ReadFCStringBuff();
+						string text;
+						if (!SmileUtil.IsASCIIString(data, out text))
+							throw new FormatException("Wrong encoding.");
+						SetToken(JsonToken.String, text);
+					}
+					break;
+				case SmileTypeClass.LongUnicodeText:
+					{
+						byte[] data = ReadFCStringBuff();
+						string text = Encoding.UTF8.GetString(data, 0, data.Length);
+						SetToken(JsonToken.String, text);
+					}
+					break;
 				default:
-					throw new ArgumentOutOfRangeException("type", "Unexpected SmileType value: " + type);
+					throw new ArgumentOutOfRangeException("type", "Unexpected SmileType value: " + type.TypeClass);
 			}
 		}
 
@@ -602,7 +638,7 @@ namespace Newtonsoft.Json.Smile
 			{
 				int l = b - 0xC0 + 1;
 				byte[] buf = this.ReadBytes(l);
-				string name = Encoding.Unicode.GetString(buf, 0, buf.Length);
+				string name = Encoding.UTF8.GetString(buf, 0, buf.Length);
 				SharedKeyNames.Add(name);
 				return name;
 			}
@@ -625,6 +661,17 @@ namespace Newtonsoft.Json.Smile
 			else
 			{
 				throw new Exception(string.Format(CultureInfo.CurrentCulture, "bad string type: {0:X}", b));
+			}
+		}
+
+		private byte[] ReadFCStringBuff()
+		{
+			byte b;
+			using (MemoryStream ms = new MemoryStream())
+			{
+				while ((b = this._reader.ReadByte()) != (byte)VALUE_CONSTANTS.StringEndMarker)
+					ms.WriteByte(b);
+				return ms.ToArray();
 			}
 		}
 

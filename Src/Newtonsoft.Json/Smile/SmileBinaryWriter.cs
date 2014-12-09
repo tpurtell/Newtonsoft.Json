@@ -69,30 +69,27 @@ namespace Newtonsoft.Json.Smile
 
 		public void WriteHeaderWithOptions(SMILE_OPTIONS options)
 		{
-			this._writer.Write((byte)0x3a);
-			this._writer.Write((byte)0x29);
-			this._writer.Write((byte)0x0a);
-			this._writer.Write((byte)options);
+			this._Write(0x3a, 0x29, 0x0a, (byte)options);
 		}
 
 		public void WriteStartArray()
 		{
-			this._writer.Write((byte)TOKEN_TYPE.StartArray);
+			this._writer.Write((byte)VALUE_CONSTANTS.StartArray);
 		}
 
 		public void WriteEndArray()
 		{
-			this._writer.Write((byte)TOKEN_TYPE.EndArray);
+			this._writer.Write((byte)VALUE_CONSTANTS.EndArray);
 		}
 
 		public void WriteStartObject()
 		{
-			this._writer.Write((byte)TOKEN_TYPE.StartObject);
+			this._writer.Write((byte)VALUE_CONSTANTS.StartObject);
 		}
 
 		public void WriteEndObject()
 		{
-			this._writer.Write((byte)TOKEN_TYPE.EndObject);
+			this._writer.Write((byte)VALUE_CONSTANTS.EndObject);
 		}
 
 		public void WriteAsciiPropertyName(byte[] name)
@@ -139,20 +136,45 @@ namespace Newtonsoft.Json.Smile
 
 		public void WriteString(string value)
 		{
-			//throw new NotImplementedException();
-			//byte[] buf = Encoding.ASCII.GetBytes(value);
 			byte[] buf;
-			SmileUtil.IsASCIIBytes(value, out buf);
-			if (buf.Length < 1 && buf.Length > 64)
-				throw new ArgumentOutOfRangeException("long ascii/unicode string value is not implemented");
-			int type = 0x40 + buf.Length - 1;
-			this._writer.Write((byte)type);
+			bool isASCII = SmileUtil.IsASCIIBytes(value, out buf);
+			if (buf.Length == 0)
+				this._Write(VALUE_CONSTANTS.EmptyString);
+
+			else if (isASCII)
+			{
+				if (buf.Length >= 1 && buf.Length <= 64)
+					this.WriteShortString((byte)((byte)VALUE_CONSTANTS.TinyAscii_BEGIN + buf.Length - 1), buf);
+				else
+					this.WriteFCString((byte)VALUE_CONSTANTS.LongAsciiText, buf);
+			}
+			else
+			{
+				if (buf.Length < 2)
+					throw new FormatException("bad utf-8 string.");
+				else if (buf.Length >= 2 && buf.Length <= 64)
+					this.WriteShortString((byte)((byte)VALUE_CONSTANTS.TinyUnicode_BEGIN + buf.Length - 2), buf);
+				else
+					this.WriteFCString((byte)VALUE_CONSTANTS.LongUnicodeText, buf);
+			}
+		}
+
+		private void WriteShortString(byte type, byte[] buf)
+		{
+			this._writer.Write(type);
 			this._writer.Write(buf);
 		}
 
-		private const int TOKEN_PREFIX_SMALL_INT = 0xC0;
-		private const int TOKEN_BYTE_INT_32 = 36;
-		private const int TOKEN_BYTE_INT_64 = 37;
+		private void WriteFCString(byte type, byte[] buf)
+		{
+			this._writer.Write(type);
+			this._writer.Write(buf);
+			this._writer.Write((byte)VALUE_CONSTANTS.StringEndMarker);
+		}
+
+		//private const int TOKEN_PREFIX_SMALL_INT = 0xC0;
+		//private const int TOKEN_BYTE_INT_32 = 0x24;
+		//private const int TOKEN_BYTE_INT_64 = 0x25;
 		public void WriteInteger(int value)
 		{
 			int i = value;
@@ -161,12 +183,11 @@ namespace Newtonsoft.Json.Smile
 			// tiny (single byte) or small (type + 6-bit value) number?
 			if (i <= 0x3F && i >= 0) {
 				if (i <= 0x1F) { // tiny 
-					this._writer.Write((byte) (TOKEN_PREFIX_SMALL_INT + i));
+					this._writer.Write((byte)((byte)VALUE_CONSTANTS.SmallInteger_BEGIN + i));
 					return;
 				}
 				// nope, just small, 2 bytes (type, 1-byte zigzag value) for 6 bit value
-				this._writer.Write((byte)TOKEN_BYTE_INT_32);
-				this._writer.Write((byte)(0x80 + i));
+				this._Write(VALUE_CONSTANTS.Integer, (byte)(0x80 + i));
 				return;
 			}
 			// Ok: let's find minimal representation then
@@ -174,38 +195,24 @@ namespace Newtonsoft.Json.Smile
 			//i >>>= 6;
 			i = (int)((uint)i >> 6);
 			if (i <= 0x7F) { // 13 bits is enough (== 3 byte total encoding)
-				this._writer.Write((byte)TOKEN_BYTE_INT_32);
-				this._writer.Write((byte) i);
-				this._writer.Write((byte) b0);
+				this._Write(VALUE_CONSTANTS.Integer, (byte)i, b0);
 				return;
 			}
 			byte b1 = (byte) (i & 0x7F);
 			i >>= 7;
 			if (i <= 0x7F) {
-				this._writer.Write((byte)TOKEN_BYTE_INT_32);
-				this._writer.Write((byte) i);
-				this._writer.Write((byte) b1);
-				this._writer.Write((byte) b0);
+				this._Write(VALUE_CONSTANTS.Integer, (byte)i, b1, b0);
 				return;
 			}
 			byte b2 = (byte) (i & 0x7F);
 			i >>= 7;
 			if (i <= 0x7F) {
-				this._writer.Write((byte)TOKEN_BYTE_INT_32);
-				this._writer.Write((byte) i);
-				this._writer.Write((byte) b2);
-				this._writer.Write((byte) b1);
-				this._writer.Write((byte) b0);
+				this._Write(VALUE_CONSTANTS.Integer, (byte)i, b2, b1, b0);
 				return;
 			}
 			// no, need all 5 bytes
 			byte b3 = (byte) (i & 0x7F);
-			this._writer.Write((byte)TOKEN_BYTE_INT_32);
-			this._writer.Write((byte) (i >> 7));
-			this._writer.Write((byte) b3);
-			this._writer.Write((byte) b2);
-			this._writer.Write((byte) b1);
-			this._writer.Write((byte) b0);
+			this._Write(VALUE_CONSTANTS.Integer, (byte)(i >> 7), b3, b2, b1, b0);
 
 //			throw new NotImplementedException();
 		}
@@ -233,61 +240,108 @@ namespace Newtonsoft.Json.Smile
 			i = (int)(value >> 7);
 			if (i == 0)
 			{
-				this._Write((byte)TOKEN_BYTE_INT_64, b4, b3, b2, b1, b0);
+				this._Write(VALUE_CONSTANTS.Long, b4, b3, b2, b1, b0);
 				return;
 			}
 			if (i <= 0x7F)
 			{
-				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i);
-				this._Write(b4, b3, b2, b1, b0);
+				this._Write(VALUE_CONSTANTS.Long, (byte)i, b4, b3, b2, b1, b0);
 				return;
 			}
 			byte b5 = (byte)(i & 0x7F);
 			i >>= 7;
 			if (i <= 0x7F)
 			{
-				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i);
-				this._Write(b5, b4, b3, b2, b1, b0);
+				this._Write(VALUE_CONSTANTS.Long, (byte)i, b5, b4, b3, b2, b1, b0);
 				return;
 			}
 			byte b6 = (byte)(i & 0x7F);
 			i >>= 7;
 			if (i <= 0x7F)
 			{
-				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i, b6);
-				this._Write(b5, b4, b3, b2, b1, b0);
+				this._Write(VALUE_CONSTANTS.Long, (byte)i, b6, b5, b4, b3, b2, b1, b0);
 				return;
 			}
 			byte b7 = (byte)(i & 0x7F);
 			i >>= 7;
 			if (i <= 0x7F)
 			{
-				this._Write((byte)TOKEN_BYTE_INT_64, (byte)i, b7, b6);
-				this._Write(b5, b4, b3, b2, b1, b0);
+				this._Write(VALUE_CONSTANTS.Long, (byte)i, b7, b6, b5, b4, b3, b2, b1, b0);
 				return;
 			}
 			byte b8 = (byte)(i & 0x7F);
 			i >>= 7;
 			// must be done, with 10 bytes! (9 * 7 + 6 == 69 bits; only need 63)
-			this._Write((byte)TOKEN_BYTE_INT_64, (byte)i, b8, b7, b6);
-			this._Write(b5, b4, b3, b2, b1, b0);
-
-			throw new NotImplementedException();
+			this._Write(VALUE_CONSTANTS.Long, (byte)i, b8, b7, b6, b5, b4, b3, b2, b1, b0);
 		}
 
-		public void _Write(params byte[] value)
+		private void _Write(params byte[] value)
 		{
 			this._writer.Write(value);
 		}
 
-		public void WriteFloat(float value)
+		private void _Write(VALUE_CONSTANTS type, params byte[] value)
 		{
-			throw new NotImplementedException();
+			this._writer.Write((byte)type);
+			this._writer.Write(value);
+		}
+
+		private static int FloatToInt32Bits(float value)
+		{
+			byte[] bytes = BitConverter.GetBytes(value);
+			return BitConverter.ToInt32(bytes, 0);
+		}
+
+		public void WriteFloat(float f)
+		{
+			/* 17-Apr-2010, tatu: could also use 'floatToIntBits', but it seems more accurate to use
+			 * exact representation; and possibly faster. However, if there are cases
+			 * where collapsing of NaN was needed (for non-Java clients), this can
+			 * be changed
+			 */
+			int i = FloatToInt32Bits(f);
+			byte b4 = (byte)(i & 0x7F);
+			i >>= 7;
+			byte b3 = (byte)(i & 0x7F);
+			i >>= 7;
+			byte b2 = (byte)(i & 0x7F);
+			i >>= 7;
+			byte b1 = (byte)(i & 0x7F);
+			i >>= 7;
+			byte b0 = (byte)(i & 0x7F);
+			this._Write(VALUE_CONSTANTS.Float, b0, b1, b2, b3, b4);
 		}
 
 		public void WriteDouble(double value)
 		{
-			throw new NotImplementedException();
+			long l = BitConverter.DoubleToInt64Bits(value);
+			int hi5 = (int)((ulong)l >> 35);
+			byte b4 = (byte)(hi5 & 0x7F); 
+			hi5 >>= 7;
+			byte b3 = (byte)(hi5 & 0x7F);
+			hi5 >>= 7;
+			byte b2 = (byte)(hi5 & 0x7F);
+			hi5 >>= 7;
+			byte b1 = (byte)(hi5 & 0x7F);
+			hi5 >>= 7;
+			byte b0 = (byte)hi5;
+			this._Write(VALUE_CONSTANTS.Double, b0, b1, b2, b3, b4);
+
+			// Handle first 29 bits (single bit first, then 4 x 7 bits)
+			// Then split byte (one that crosses lo/hi int boundary), 7 bits
+			int mid = (int) (l >> 28);
+			this._Write((byte)(mid & 0x7F));
+
+			// and then last 4 bytes (28 bits)
+			int lo4 = (int) l;
+			b3 = (byte) (lo4 & 0x7F);
+			lo4 >>= 7;
+			b2 = (byte) (lo4 & 0x7F);
+			lo4 >>= 7;
+			b1 = (byte) (lo4 & 0x7F);
+			lo4 >>= 7;
+			b0 = (byte) (lo4 & 0x7F);
+			this._Write(b0, b1, b2, b3);
 		}
 
 		public void WriteBool(bool value)
@@ -302,7 +356,7 @@ namespace Newtonsoft.Json.Smile
 
 		public void WriteSByte(sbyte value)
 		{
-			throw new NotImplementedException();
+			this._writer.Write(value);
 		}
 
 		public void WriteDecimal(Decimal value)
