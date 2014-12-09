@@ -40,24 +40,14 @@ namespace Newtonsoft.Json.Smile
     public class SmileReader : JsonReader
     {
         private readonly BinaryReader _reader;
-        private readonly List<ContainerContext> _stack;
+		private readonly Stack<SmileType> _stack;
 
 		private SmileType _currentElementType;
-        private ContainerContext _currentContext;
+		private SmileType _currentContext;
 
         private bool _readRootValueAsArray;
         private bool _jsonNet35BinaryCompatibility;
         private DateTimeKind _dateTimeKindHandling;
-
-        private class ContainerContext
-        {
-			public readonly SmileType Type;
-
-			public ContainerContext(SmileType type)
-            {
-                Type = type;
-            }
-        }
 
         /// <summary>
         /// Gets or sets a value indicating whether binary data reading should compatible with incorrect Json.NET 3.5 written binary.
@@ -122,7 +112,7 @@ namespace Newtonsoft.Json.Smile
         {
             ValidationUtils.ArgumentNotNull(stream, "stream");
             _reader = new BinaryReader(stream);
-            _stack = new List<ContainerContext>();
+			_stack = new Stack<SmileType>();
             _readRootValueAsArray = readRootValueAsArray;
             _dateTimeKindHandling = dateTimeKindHandling;
 
@@ -142,7 +132,7 @@ namespace Newtonsoft.Json.Smile
         {
             ValidationUtils.ArgumentNotNull(reader, "reader");
             _reader = reader;
-            _stack = new List<ContainerContext>();
+			_stack = new Stack<SmileType>();
             _readRootValueAsArray = readRootValueAsArray;
             _dateTimeKindHandling = dateTimeKindHandling;
 
@@ -167,8 +157,7 @@ namespace Newtonsoft.Json.Smile
 
 		private string ReadElement(byte keyType)
 		{
-			//_currentElementType = ReadType();
-			string elementName = ReadString(keyType);
+			string elementName = ReadPropertyKey(keyType);
 			//Console.WriteLine("elementName: {0}", elementName);
 			_currentElementType = ReadType();
 			return elementName;
@@ -294,14 +283,13 @@ namespace Newtonsoft.Json.Smile
                 case State.Start:
                 {
                     JsonToken token = (!_readRootValueAsArray) ? JsonToken.StartObject : JsonToken.StartArray;
-					SmileType type = (!_readRootValueAsArray) ? SmileType.Object : SmileType.Array;
+					SmileType type = (!_readRootValueAsArray) ? SmileType.NewObject() : SmileType.NewArray();
 
 					_currentElementType = ReadType();
 					type = _currentElementType;
 
                     SetToken(token);
-                    ContainerContext newContext = new ContainerContext(type);
-                    PushContext(newContext);
+                    PushContext(type);
                     return true;
                 }
                 case State.Complete:
@@ -316,7 +304,7 @@ namespace Newtonsoft.Json.Smile
 				case State.ArrayStart:
 				case State.PostValue:
 				{
-					ContainerContext context = _currentContext;
+					SmileType context = _currentContext;
 					if (context == null)
 						return false;
 
@@ -324,18 +312,20 @@ namespace Newtonsoft.Json.Smile
 					if (keyType == (byte)0xF9 || keyType == (byte)0xFB)
 					{
 						PopContext();
-						JsonToken endToken = (context.Type.TypeClass == SmileTypeClass.START_OBJECT) ? JsonToken.EndObject : JsonToken.EndArray;
+						JsonToken endToken = (context.TypeClass == SmileTypeClass.START_OBJECT) ? JsonToken.EndObject : JsonToken.EndArray;
 						SetToken(endToken);
 						return true;
 					}
 
-					if (_currentContext.Type.TypeClass == SmileTypeClass.START_ARRAY)
+					if (_currentContext.TypeClass == SmileTypeClass.START_ARRAY)
 					{
 						_currentElementType = SmileType.Parse(keyType);
 						ReadType(_currentElementType);
 					}
 					else
+					{
 						SetToken(JsonToken.PropertyName, ReadElement(keyType));
+					}
 
 					return true;
 				}
@@ -356,16 +346,16 @@ namespace Newtonsoft.Json.Smile
 
         private void PopContext()
         {
-            _stack.RemoveAt(_stack.Count - 1);
-            if (_stack.Count == 0)
-                _currentContext = null;
-            else
-                _currentContext = _stack[_stack.Count - 1];
+			_stack.Pop();
+			if (_stack.Count == 0)
+				_currentContext = null;
+			else
+				_currentContext = _stack.Peek();
         }
 
-        private void PushContext(ContainerContext newContext)
-        {
-            _stack.Add(newContext);
+		private void PushContext(SmileType newContext)
+        {			
+            _stack.Push(newContext);
             _currentContext = newContext;
         }
 
@@ -376,7 +366,7 @@ namespace Newtonsoft.Json.Smile
 
 		private int ReadZigzagNumber(int value)
 		{
-			throw new NotImplementedException();
+			return SmileUtil.zigzagDecode(value);
 		}
 
 		private int ReadZigzag32()
@@ -543,19 +533,13 @@ namespace Newtonsoft.Json.Smile
 				case SmileTypeClass.START_OBJECT:
 					{
 						SetToken(JsonToken.StartObject);
-
-						ContainerContext newContext = new ContainerContext(SmileType.Object);
-						PushContext(newContext);
-						//newContext.Length = ReadInt32();
+						PushContext(SmileType.NewObject());
 						break;
 					}
 				case SmileTypeClass.START_ARRAY:
 					{
 						SetToken(JsonToken.StartArray);
-
-						ContainerContext newContext = new ContainerContext(SmileType.Array);
-						PushContext(newContext);
-						//newContext.Length = ReadInt32();
+						PushContext(SmileType.NewArray());
 						break;
 					}
 				case SmileTypeClass.Binary:
@@ -593,7 +577,7 @@ namespace Newtonsoft.Json.Smile
 					}
 					break;
 				default:
-					throw new ArgumentOutOfRangeException("type", "Unexpected SmileType value: " + type.TypeClass);
+						throw new ArgumentOutOfRangeException("type", "Unexpected SmileType value: " + type.TypeClass);
 			}
 		}
 
@@ -614,19 +598,12 @@ namespace Newtonsoft.Json.Smile
             return ReadBytes(dataLength);
         }
 
-
-		private string ReadString()
-		{
-			byte b = ReadByte();
-			return ReadString(b);
-		}
-
 		List<string> SharedKeyNames = new List<string>();
-		private string ReadString(byte b)
+		private string ReadPropertyKey(byte b)
 		{
-			if (b >= 0x80 && b <= 0xBF)
+			if (b >= (byte)KEY_TYPES.ShortAsciiName_BEGIN && b <= (byte)KEY_TYPES.ShortAsciiName_END)
 			{
-				int l = b - 0x80 + 1;
+				int l = b - (byte)KEY_TYPES.ShortAsciiName_BEGIN + 1;
 				byte[] buf = this.ReadBytes(l);
 				string name;
 				if (!SmileUtil.IsASCIIString(buf, out name))
@@ -634,34 +611,39 @@ namespace Newtonsoft.Json.Smile
 				SharedKeyNames.Add(name);
 				return name;
 			}
-			else if (b >= 0xC0 && b <= 0xF7)
+			else if (b >= (byte)KEY_TYPES.ShortUnicodeName_BEGIN && b <= (byte)KEY_TYPES.ShortUnicodeName_END)
 			{
-				int l = b - 0xC0 + 1;
+				int l = b - (byte)KEY_TYPES.ShortUnicodeName_BEGIN + 1;
 				byte[] buf = this.ReadBytes(l);
 				string name = Encoding.UTF8.GetString(buf, 0, buf.Length);
 				SharedKeyNames.Add(name);
 				return name;
 			}
-			else if (b == 0x20)
-				return string.Empty;
-			else if (b >= 0x30 && b <= 0x33) //"Long" shared key name reference 
-				throw new NotImplementedException();
-			else if (b == 0x34)	//Long (not-yet-shared) Unicode name. Variable-length String
-				throw new NotImplementedException();
-			else if (b == 0x3A)
-				throw new ArgumentOutOfRangeException();
-			else if (b >= 0x40 && b <= 0x7F)
+			else if (b >= (byte)KEY_TYPES.ShortSharedKeyNameReference_BEGIN && b <= (byte)KEY_TYPES.ShortSharedKeyNameReference_END)
 			{
-				int i = b - 0x40;
+				int i = b - (byte)KEY_TYPES.ShortSharedKeyNameReference_BEGIN;
 				if (this.SharedKeyNames.Count <= i)
-					throw new IndexOutOfRangeException();
+					throw new IndexOutOfRangeException("invalid shared key index.");
 				return this.SharedKeyNames[i];
 			}
-			//else if (b == 0xFB) not going here.
-			else
+			else if (b == (byte)KEY_TYPES.EmptyString)
+				return string.Empty;
+			else if (b >= (byte)KEY_TYPES.LongSharedKeyNameReference_BEGIN && b <= (byte)KEY_TYPES.LongSharedKeyNameReference_END) //"Long" shared key name reference 
+				throw new NotImplementedException();
+			else if (b == (byte)KEY_TYPES.LongUnicodeName)	//Long (not-yet-shared) Unicode name. Variable-length String
 			{
-				throw new Exception(string.Format(CultureInfo.CurrentCulture, "bad string type: {0:X}", b));
+				byte[] buf = ReadFCStringBuff();
+				if (buf.Length < 64)
+					throw new ArgumentOutOfRangeException("long unicode property name must be longer than 63bytes: " + buf.Length);
+				string name = Encoding.UTF8.GetString(buf, 0, buf.Length);
+				if (SmileConstant.SHARE_LONG_UNICODE_KEY_NAME)
+					SharedKeyNames.Add(name);
+				return name;
 			}
+			else if (b == (byte)KEY_TYPES.BAD_0X3A)
+				throw new ArgumentOutOfRangeException("invalid property type: 0x3A");
+			else
+				throw new Exception(string.Format(CultureInfo.CurrentCulture, "bad property name type: {0:X}", b));
 		}
 
 		private byte[] ReadFCStringBuff()

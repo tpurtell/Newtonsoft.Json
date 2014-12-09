@@ -25,7 +25,7 @@
 
 namespace Newtonsoft.Json.Smile
 {
-	//merge to VALUE_CONSTANTS?
+	//TODO: uses VALUE_CONSTANTS
 	public enum SmileTypeClass : byte
 	{
 		ShortSharedValueStringReference = 0x00,
@@ -50,9 +50,6 @@ namespace Newtonsoft.Json.Smile
 
 	public class SmileType
 	{
-		public static SmileType Object = new SmileType(SmileTypeClass.START_OBJECT);
-		public static SmileType Array = new SmileType(SmileTypeClass.START_ARRAY);
-
 		public SmileTypeClass TypeClass;
 		public int Value;
 
@@ -70,7 +67,7 @@ namespace Newtonsoft.Json.Smile
 		{
 			if (type < (byte)SmileTypeClass.LongASCIIText)
 			{
-				byte b = (byte)(type & (byte)0xF0);
+				byte b = (byte)(type & (byte)0xE0);
 				this.TypeClass = (SmileTypeClass)b;
 				this.Value = type - b;
 			}
@@ -84,6 +81,18 @@ namespace Newtonsoft.Json.Smile
 		public static SmileType Parse(byte type)
 		{
 			return new SmileType(type);
+		}
+
+		//Currently, Object and Array can be shared but we don't share them.
+		//public static SmileType Object = new SmileType(SmileTypeClass.START_OBJECT);
+		//public static SmileType Array = new SmileType(SmileTypeClass.START_ARRAY);
+		public static SmileType NewObject()
+		{
+			return new SmileType(SmileTypeClass.START_OBJECT);
+		}
+		public static SmileType NewArray()
+		{
+			return new SmileType(SmileTypeClass.START_ARRAY);
 		}
 	}
 }

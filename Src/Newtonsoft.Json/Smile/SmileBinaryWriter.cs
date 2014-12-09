@@ -92,22 +92,44 @@ namespace Newtonsoft.Json.Smile
 			this._writer.Write((byte)VALUE_CONSTANTS.EndObject);
 		}
 
-		public void WriteAsciiPropertyName(byte[] name)
+		public bool WriteAsciiPropertyName(byte[] name)
 		{
-			if (name.Length < 1 && name.Length > 64)
-				throw new ArgumentOutOfRangeException("long ascii property name is not implemented");
-			int type = 0x80 + name.Length - 1;
+			if (name.Length < 1)
+				throw new ArgumentOutOfRangeException("ascii property name is too short.");
+			if (name.Length > 64)
+				return WriteLongUnicodePropertyName(name);
+
+			int type = (byte)KEY_TYPES.ShortAsciiName_BEGIN + name.Length - 1;
 			this._writer.Write((byte)type);
 			this._writer.Write(name);
+
+			return true;
 		}
 
-		public void WriteUnicodePropertyName(byte[] name)
+		public bool WriteUnicodePropertyName(byte[] name)
 		{
-			if (name.Length < 2 && name.Length > 57)
-				throw new ArgumentOutOfRangeException("long unicode property name is not implemented");
-			int type = 0xC0 + name.Length - 2;
+			if (name.Length < 2)
+				throw new ArgumentOutOfRangeException("unicode property name is too short.");
+			if (name.Length > 57)
+				return WriteLongUnicodePropertyName(name);
+	
+			int type = (byte)KEY_TYPES.ShortUnicodeName_BEGIN + name.Length - 2;
 			this._writer.Write((byte)type);
 			this._writer.Write(name);
+
+			return true;
+		}
+
+		public bool WriteLongUnicodePropertyName(byte[] name)
+		{
+			//TODO: need check how Jackson process unicode property name between 58bytes to 63bytes.
+			//if (name.Length < 64)
+			//	throw new ArgumentOutOfRangeException("long unicode property name must be longer than 63bytes");
+			this._writer.Write((byte)KEY_TYPES.LongUnicodeName);
+			this._writer.Write(name);
+			this._Write(VALUE_CONSTANTS.StringEndMarker);
+
+			return SmileConstant.SHARE_LONG_UNICODE_KEY_NAME;
 		}
 
 		public void WriteShortReferencePropertyName(int ref_id)

@@ -145,23 +145,23 @@ namespace Newtonsoft.Json.Smile
 			int ref_index = 0;
 			if (!this.PropertyReferences.TryGetValue(name, out ref_index))
 			{
-				ref_index = CurrentPropertyReferenceIndex;
-				this.PropertyReferences.Add(name, ref_index);
-				CurrentPropertyReferenceIndex++;
-
-				//_writer.WritePropertyName(name);
-				//byte[] buf = Encoding.ASCII.GetBytes(name);
-				//string tmp1 = Encoding.ASCII.GetString(buf);
+				bool toShared = false;
 				byte[] buf;
 				if (SmileUtil.IsASCIIBytes(name, out buf))
-					_writer.WriteAsciiPropertyName(buf);
+					toShared = _writer.WriteAsciiPropertyName(buf);
 				else
-					_writer.WriteUnicodePropertyName(buf);
+					toShared = _writer.WriteUnicodePropertyName(buf);
+
+				if (toShared)
+				{
+					ref_index = CurrentPropertyReferenceIndex;
+					this.PropertyReferences.Add(name, ref_index);
+					CurrentPropertyReferenceIndex++;
+				}
 			}
 			else
-			{
 				_writer.WriteShortReferencePropertyName(ref_index);
-			}
+
 		}
 
 		/// <summary>

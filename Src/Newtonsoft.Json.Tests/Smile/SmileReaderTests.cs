@@ -157,6 +157,13 @@ namespace Newtonsoft.Json.Tests.Smile
 			Assert.NotNull(people.notes_chinese);
 			Assert.AreEqual(76, people.notes_chinese.Length);
 			Assert.AreEqual('男', people.notes_chinese[0]);
+
+			Assert.Null(people.null_string);
+			Assert.AreEqual(-16, people.small_integer);
+			Assert.AreEqual("abc65", people.long_column_65);
+			Assert.AreEqual("abc175", people.long_column_175);
+			Assert.AreEqual("sA", people.short_column);
+
 		}
 
 		void VerifyUser2(People people)
@@ -184,6 +191,12 @@ namespace Newtonsoft.Json.Tests.Smile
 			Assert.NotNull(people.notes_chinese);
 			Assert.AreEqual(80, people.notes_chinese.Length);
 			Assert.AreEqual('女', people.notes_chinese[0]);
+
+			Assert.Null(people.null_string);
+			Assert.AreEqual(12, people.small_integer);
+			Assert.AreEqual("def65", people.long_column_65);
+			Assert.AreEqual("def175", people.long_column_175);
+			Assert.AreEqual("sB", people.short_column);
 		}
 	}
 }

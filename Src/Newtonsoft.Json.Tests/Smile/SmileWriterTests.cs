@@ -148,6 +148,11 @@ namespace Newtonsoft.Json.Tests.Smile
 			people.height = 181.2345;
 			people.notes = new string('1', 74);
 			people.notes_chinese = new string('男', 76);
+			people.null_string = null;
+			people.small_integer = -16;
+			people.long_column_65 = "abc65";
+			people.long_column_175 = "abc175";
+			people.short_column = "sA";
 			return people;
 		}
 
@@ -166,6 +171,11 @@ namespace Newtonsoft.Json.Tests.Smile
 			people.height = 168.7654;
 			people.notes = new string('2', 78);
 			people.notes_chinese = new string('女', 80);
+			people.null_string = null;
+			people.small_integer = 12;
+			people.long_column_65 = "def65";
+			people.long_column_175 = "def175";
+			people.short_column = "sB";
 			return people;
 		}
 	}

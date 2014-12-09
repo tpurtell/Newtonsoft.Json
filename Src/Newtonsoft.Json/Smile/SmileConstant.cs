@@ -71,7 +71,25 @@ namespace Newtonsoft.Json.Smile
 		ALL = SharedPropertyNameEnabled & SharedStringValueEnabled & RawBinaryEnabled,
 	}
 
-	class SmileConstant
+	public enum KEY_TYPES : byte
 	{
+		EmptyString = 0x20,
+		LongSharedKeyNameReference_BEGIN = 0x30,
+		LongSharedKeyNameReference_END = 0x33,
+		LongUnicodeName = 0x34,
+		BAD_0X3A = 0x3A,
+		ShortSharedKeyNameReference_BEGIN = 0x40,
+		ShortSharedKeyNameReference_END = 0x7F,
+		ShortAsciiName_BEGIN = 0x80,
+		ShortAsciiName_END = 0xBF,
+		ShortUnicodeName_BEGIN = 0xC0,
+		ShortUnicodeName_END = 0xF7,
+		EndObject = 0xFB,
+	}
+
+	public class SmileConstant
+	{
+		//damn, Jackson v2.4.3 doesn't follow spec. It shares unicode key name longer than 64bytes.
+		public const bool SHARE_LONG_UNICODE_KEY_NAME = true;
 	}
 }
