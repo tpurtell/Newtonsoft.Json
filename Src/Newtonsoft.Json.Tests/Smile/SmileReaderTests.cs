@@ -27,6 +27,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using System.Runtime.Serialization;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Tests.TestObjects;
@@ -72,6 +73,31 @@ namespace Newtonsoft.Json.Tests.Smile
 
 			this.VerifyUser1(people);
 		}
+
+        [Test]
+        public void ReadOne()
+        {
+            JsonSerializer serializer = new JsonSerializer();
+
+            byte[] data = SoapHexBinary.Parse("3A290A01FA8072FA8023CA8062FA817574FA43FA807022806123806C6E6C6F6E6764616E3A2F2F4F4E452F6C64746573742D312F6B4B77717843634E316D784F4A695A52324B44464C673D3DFBFBFBFBFB").Value;
+
+            MemoryStream ms = new MemoryStream(data);
+
+            SmileReader reader = new SmileReader(ms, false, DateTimeKind.Local);
+            var x = serializer.Deserialize<JObject>(reader);
+        }
+        [Test]
+        public void ReadTwo()
+        {
+            JsonSerializer serializer = new JsonSerializer();
+
+            byte[] data = SoapHexBinary.Parse("3A290A01FA8072FA8023C6803DFA807624A6FBFBFB").Value;
+
+            MemoryStream ms = new MemoryStream(data);
+
+            SmileReader reader = new SmileReader(ms, false, DateTimeKind.Local);
+            var x = serializer.Deserialize<JObject>(reader);
+        }
 
         [Test]
         public void ReadSingleObject()
