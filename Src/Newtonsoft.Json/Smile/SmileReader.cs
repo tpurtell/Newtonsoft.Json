@@ -472,16 +472,26 @@ namespace Newtonsoft.Json.Smile
 			switch (type.TypeClass)
 			{
 				case SmileTypeClass.TinyASCII:
-				case SmileTypeClass.ShortASCII:
 					{
 						int length = type.Value + 1;
 						SetToken(JsonToken.String, ReadStringInLength(length));
 						break;
 					}
+				case SmileTypeClass.ShortASCII:
+					{
+						int length = type.Value + 33;
+						SetToken(JsonToken.String, ReadStringInLength(length));
+						break;
+					}
 				case SmileTypeClass.TinyUnicode:
-				case SmileTypeClass.ShortUnicode:
 					{
 						int length = type.Value + 2;
+						SetToken(JsonToken.String, ReadStringInLength(length));
+						break;
+					}
+				case SmileTypeClass.ShortUnicode:
+					{
+						int length = type.Value + 34;
 						SetToken(JsonToken.String, ReadStringInLength(length));
 						break;
 					}
