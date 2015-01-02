@@ -100,6 +100,19 @@ namespace Newtonsoft.Json.Tests.Smile
         }
 
         [Test]
+        public void ReadThree()
+        {   JsonSerializer serializer = new JsonSerializer();
+
+            byte[] data = SoapHexBinary.Parse("3A290A01FA8072FA802324A08069FA8064FA43F8F98070228077C0FBFBFBFB").Value;
+
+            MemoryStream ms = new MemoryStream(data);
+
+            SmileReader reader = new SmileReader(ms, false, DateTimeKind.Local);
+            var x = serializer.Deserialize<JObject>(reader);
+
+            
+        }
+        [Test]
         public void ReadSingleObject()
         {
 			JsonSerializer serializer = new JsonSerializer();
