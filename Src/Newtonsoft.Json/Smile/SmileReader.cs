@@ -158,7 +158,6 @@ namespace Newtonsoft.Json.Smile
 		private string ReadElement(byte keyType)
 		{
 			string elementName = ReadPropertyKey(keyType);
-			//Console.WriteLine("elementName: {0}", elementName);
 			_currentElementType = ReadType();
 			return elementName;
 		}
@@ -371,7 +370,7 @@ namespace Newtonsoft.Json.Smile
 
 		private int ReadZigzag32()
 		{
-			int value = this._reader.ReadByte();
+			int value = this._reader.ReadSByte();
 			int i;
 			 if (value < 0) { // 6 bits
 				 value &= 0x3F;
@@ -611,15 +610,14 @@ namespace Newtonsoft.Json.Smile
 		List<string> SharedKeyNames = new List<string>();
 		private string ReadPropertyKey(byte b)
 		{
+			String propertyKey = null;
 			if (b >= (byte)KEY_TYPES.ShortAsciiName_BEGIN && b <= (byte)KEY_TYPES.ShortAsciiName_END)
 			{
 				int l = b - (byte)KEY_TYPES.ShortAsciiName_BEGIN + 1;
 				byte[] buf = this.ReadBytes(l);
-				string name;
-				if (!SmileUtil.IsASCIIString(buf, out name))
+				if (!SmileUtil.IsASCIIString(buf, out propertyKey))
 					throw new FormatException("Wrong encoding.");
-				SharedKeyNames.Add(name);
-				return name;
+				SharedKeyNames.Add(propertyKey);
 			}
 			else if (b >= (byte)KEY_TYPES.ShortUnicodeName_BEGIN && b <= (byte)KEY_TYPES.ShortUnicodeName_END)
 			{
@@ -627,17 +625,17 @@ namespace Newtonsoft.Json.Smile
 				byte[] buf = this.ReadBytes(l);
 				string name = Encoding.UTF8.GetString(buf, 0, buf.Length);
 				SharedKeyNames.Add(name);
-				return name;
+				propertyKey = name;
 			}
 			else if (b >= (byte)KEY_TYPES.ShortSharedKeyNameReference_BEGIN && b <= (byte)KEY_TYPES.ShortSharedKeyNameReference_END)
 			{
 				int i = b - (byte)KEY_TYPES.ShortSharedKeyNameReference_BEGIN;
 				if (this.SharedKeyNames.Count <= i)
 					throw new IndexOutOfRangeException("invalid shared key index.");
-				return this.SharedKeyNames[i];
+				propertyKey = this.SharedKeyNames[i];
 			}
 			else if (b == (byte)KEY_TYPES.EmptyString)
-				return string.Empty;
+				propertyKey = string.Empty;
 			else if (b >= (byte)KEY_TYPES.LongSharedKeyNameReference_BEGIN && b <= (byte)KEY_TYPES.LongSharedKeyNameReference_END) //"Long" shared key name reference 
 				throw new NotImplementedException();
 			else if (b == (byte)KEY_TYPES.LongUnicodeName)	//Long (not-yet-shared) Unicode name. Variable-length String
@@ -645,15 +643,17 @@ namespace Newtonsoft.Json.Smile
 				byte[] buf = ReadFCStringBuff();
 				if (buf.Length < 64)
 					throw new ArgumentOutOfRangeException("long unicode property name must be longer than 63bytes: " + buf.Length);
-				string name = Encoding.UTF8.GetString(buf, 0, buf.Length);
+				propertyKey = Encoding.UTF8.GetString(buf, 0, buf.Length);
 				if (SmileConstant.SHARE_LONG_UNICODE_KEY_NAME)
-					SharedKeyNames.Add(name);
-				return name;
+					SharedKeyNames.Add(propertyKey);
 			}
 			else if (b == (byte)KEY_TYPES.BAD_0X3A)
 				throw new ArgumentOutOfRangeException("invalid property type: 0x3A");
 			else
 				throw new Exception(string.Format(CultureInfo.CurrentCulture, "bad property name type: {0:X}", b));
+
+			//System.Diagnostics.Debug.WriteLine("propertyKey: {0}", propertyKey);
+			return propertyKey;
 		}
 
 		private byte[] ReadFCStringBuff()
@@ -690,7 +690,9 @@ namespace Newtonsoft.Json.Smile
 
 		private SmileType ReadType()
 		{
-			return SmileType.Parse(_reader.ReadByte());
+			SmileType type = SmileType.Parse(_reader.ReadByte());
+			//System.Diagnostics.Debug.WriteLine("	propertyType: {0}, {1}, {2}", (byte)type.TypeClass, type.Value, type.TypeClass);
+			return type;
 		}
 
         private byte[] ReadBytes(int count)

@@ -51,6 +51,7 @@ using System.Globalization;
 using Newtonsoft.Json.Utilities.LinqBridge;
 #else
 using System.Linq;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 
 #endif
 
@@ -128,6 +129,23 @@ namespace Newtonsoft.Json.Tests.Smile
 
 			string smile = BytesToHex(ms.ToArray());
 			Assert.AreEqual(SmileTestData.Users, smile);
+		}
+
+		[Test]
+		public void WriteThree()
+		{
+			String json = "{\"r\":{\"#\":16,\"i\":{\"d\":{\"d\":[],\"p\":false,\"w\":0}}}}";
+			String smile_ex = "3A290A01FA8072FA802324A08069FA8064FA43F8F98070228077C0FBFBFBFB";
+			var obj = JsonConvert.DeserializeObject(json);
+
+			JsonSerializer serializer = new JsonSerializer();
+
+			MemoryStream ms = new MemoryStream();
+			SmileWriter writer = new SmileWriter(ms);
+			serializer.Serialize(writer, obj);
+
+			string smile = BytesToHex(ms.ToArray(), true);
+			Assert.AreEqual(smile_ex, smile);
 		}
 	}
 
