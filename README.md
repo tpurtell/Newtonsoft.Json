@@ -8,4 +8,3 @@ This is a modified version of Newtonsoft.Json where the Portable version has bee
 Smile has some unimplemented features
 - big integers
 - not properly using shared string ids for encoding
-- ....
