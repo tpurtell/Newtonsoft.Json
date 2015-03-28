@@ -4,3 +4,4 @@ This is a modified version of Newtonsoft.Json where the Portable version has bee
 - have better startup performance particularly on mobile by using a concurrent dictionary for properties
 - have reduced size by eliminating dynamic feature 
 - support compacy binary representation using the SMILE format
+
